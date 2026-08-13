@@ -1,0 +1,6 @@
+fsearch
+*.idx
+*.o
+compile_commands.json
+.DS_Store
+.cache/
