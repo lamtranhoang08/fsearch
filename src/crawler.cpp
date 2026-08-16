@@ -52,7 +52,6 @@ std::vector<CrawlResult> crawl(const std::string& rootDir,
                 result.content += data;
             }
         }
-
         results.push_back(std::move(result));
     }
 
