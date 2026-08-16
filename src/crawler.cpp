@@ -1,52 +1,56 @@
 #include "crawler.hpp"
+
 #include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <algorithm>
 #include <iostream>
+#include <cctype>
+#include <system_error>
 
 namespace fs = std::filesystem;
 
-static bool hasExtension(const fs::path& p, const std::vector<std::string>& extensions) {
-    std::string ext = p.extension().string();
-    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-    return std::find(extensions.begin(), extensions.end(), ext) != extensions.end();
+namespace {
+    bool HasExtension(const fs::path& p, const std::vector<std::string>& extensions) {
+        std::string ext = p.extension().string();
+        std::transform(ext.begin(),  ext.end(), ext.begin(), [](unsigned char c) {
+            return std::tolower(c);
+        });
+        return std::find(extensions.begin(), extensions.end(), ext) != extensions.end();
+    }
 }
 
-std::vector<CrawlResult> crawl(const std::string& rootDir,
+std::vector<CrawlResult> Crawl(const std::string& root_dir,
                                 const std::vector<std::string>& extensions,
-                                size_t maxFileBytes) {
+                                size_t max_file_bytes) {
     std::vector<CrawlResult> results;
-
     std::error_code ec;
-    auto it = fs::recursive_directory_iterator(
-        rootDir, fs::directory_options::skip_permission_denied, ec);
+    auto it = fs::recursive_directory_iterator(root_dir, fs::directory_options::skip_permission_denied, ec);
     auto end = fs::recursive_directory_iterator();
 
-    for (; it != end; it.increment(ec)) {
-        if (ec) {
+    for(; it != end; it.increment(ec)) {
+        if(ec) {
             ec.clear();
-            continue;
+            continue;   
         }
 
         const auto& entry = *it;
-        if (!entry.is_regular_file(ec)) continue;
-
+        if(!entry.is_regular_file(ec)) continue;
         const fs::path& path = entry.path();
         CrawlResult result;
         result.path = path.string();
 
-        // Filename always contributes to the index (helps find binaries, images, etc).
+        // Filename always contributes to the index
         result.content = path.filename().string();
 
-        if (hasExtension(path, extensions)) {
+        if(HasExtension(path, extensions)) {
             std::ifstream file(path, std::ios::binary);
-            if (file) {
+            if(!file) {
                 std::ostringstream buf;
                 buf << file.rdbuf();
                 std::string data = buf.str();
-                if (data.size() > maxFileBytes) {
-                    data.resize(maxFileBytes);
+                if(data.size() > max_file_bytes) {
+                    data.resize(max_file_bytes);
                 }
                 result.content += " ";
                 result.content += data;
@@ -54,6 +58,5 @@ std::vector<CrawlResult> crawl(const std::string& rootDir,
         }
         results.push_back(std::move(result));
     }
-
-    return results;
+    return results;     
 }
