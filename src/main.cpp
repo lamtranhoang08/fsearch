@@ -11,9 +11,9 @@
 namespace {
 
 const std::vector<std::string> kTextExtensions = {
-    ".txt",  ".md",  ".cpp", ".h",    ".hpp", ".c",   ".py",  ".js",
-    ".ts",   ".json", ".csv", ".java", ".go",  ".rs",  ".yaml", ".yml",
-    ".xml",  ".html", ".css", ".sh",   ".sql", ".log"};
+    ".txt", ".md",   ".cpp", ".h",    ".hpp", ".c",  ".py",   ".js",
+    ".ts",  ".json", ".csv", ".java", ".go",  ".rs", ".yaml", ".yml",
+    ".xml", ".html", ".css", ".sh",   ".sql", ".log"};
 
 void PrintUsage() {
   std::cerr
@@ -25,12 +25,12 @@ void PrintUsage() {
          "index\n";
 }
 
-int CmdBuild(const std::string& dir, const std::string& index_file) {
+int CmdBuild(const std::string &dir, const std::string &index_file) {
   auto start = std::chrono::steady_clock::now();
 
   auto files = Crawl(dir, kTextExtensions);
   InvertedIndex index;
-  for (const auto& f : files) {
+  for (const auto &f : files) {
     auto tokens = Tokenize(f.content);
     index.AddDocument(f.path, tokens);
   }
@@ -46,13 +46,13 @@ int CmdBuild(const std::string& dir, const std::string& index_file) {
   return 0;
 }
 
-int CmdSearch(const std::string& index_file,
-              const std::vector<std::string>& query_words) {
+int CmdSearch(const std::string &index_file,
+              const std::vector<std::string> &query_words) {
   InvertedIndex index;
   index.Load(index_file);
 
   std::string query_text;
-  for (const auto& w : query_words) {
+  for (const auto &w : query_words) {
     query_text += w;
     query_text += " ";
   }
@@ -66,7 +66,7 @@ int CmdSearch(const std::string& index_file,
   if (results.empty()) {
     std::cout << "No matches.\n";
   } else {
-    for (const auto& [path, score] : results) {
+    for (const auto &[path, score] : results) {
       std::cout << std::fixed << std::setprecision(1) << score << "\t" << path
                 << "\n";
     }
@@ -76,9 +76,9 @@ int CmdSearch(const std::string& index_file,
   return 0;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   if (argc < 2) {
     PrintUsage();
     return 1;
