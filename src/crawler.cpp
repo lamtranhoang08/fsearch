@@ -11,13 +11,15 @@
 namespace fs = std::filesystem;
 
 namespace {
-    bool HasExtension(const fs::path& p, const std::vector<std::string>& extensions) {
-        std::string ext = p.extension().string();
-        std::transform(ext.begin(),  ext.end(), ext.begin(), [](unsigned char c) {
-            return std::tolower(c);
-        });
-        return std::find(extensions.begin(), extensions.end(), ext) != extensions.end();
-    }
+bool HasExtension(const fs::path& p, const std::vector<std::string>& extensions) {
+    if(!p.has_extension()) return false;
+    
+    std::string ext = p.extension().string();
+    std::transform(ext.begin(),  ext.end(), ext.begin(), [](unsigned char c) {
+        return std::tolower(c);
+    });
+    return std::find(extensions.begin(), extensions.end(), ext) != extensions.end();
+}
 }
 
 std::vector<CrawlResult> Crawl(const std::string& root_dir,
@@ -45,7 +47,7 @@ std::vector<CrawlResult> Crawl(const std::string& root_dir,
 
         if(HasExtension(path, extensions)) {
             std::ifstream file(path, std::ios::binary);
-            if(!file) {
+            if(file) {
                 std::ostringstream buf;
                 buf << file.rdbuf();
                 std::string data = buf.str();
