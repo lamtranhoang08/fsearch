@@ -1,37 +1,98 @@
 #ifndef INVERTED_INDEX_HPP_
 #define INVERTED_INDEX_HPP_
 
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <cstdint>
-#include <utility>
 #include <cstddef>
+#include <cstdint>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
+/**
+ * @brief One occurrence record: a document ID and how many times a term
+ * appears in it.
+ */
 struct Posting {
-    uint32_t doc_id;
-    uint32_t term_freq;
+  uint32_t doc_id;     // Index into InvertedIndex's document list.
+  uint32_t term_freq;  // Number of times the term appears in that doc.
 };
 
 class InvertedIndex {
-public:
-    // Registers a document and its tokens. Returns the assigned doc id
-    uint32_t AddDocument(const std::string& path, const std::vector<std::string>& tokens);
+ public:
+  /**
+   * @brief Adds a new document, or re-indexes it in place if path was already
+   * indexed.
+   *
+   * @param path Unique identifier for the document (typically a filesystem path).
+   * @param tokens Tokens produced from the document's content via Tokenize().
+   * @return uint32_t The document's ID.
+   */
+  uint32_t AddDocument(const std::string& path,
+                      const std::vector<std::string>& tokens);
 
-    // AND-semantics search: a document must contain every query token
-    // Score = sum of term frequencies across matched terms
-    std::vector<std::pair<std::string, double>> Search(
-        const std::vector<std::string>& query_tokens, size_t top_k = 20) const;
+  /**
+   * @brief Removes a previously-indexed document and all its postings.
+   *
+   * @param path The document's path, as passed to AddDocument().
+   */
+  void RemoveDocument(const std::string& path);
 
-    void Save(const std::string& out_path) const;
-    void Load(const std::string& in_path);
+  /**
+   * @brief Searches the index using strict AND semantics.
+   *
+   * A document is only returned if it contains every token in @p query_tokens.
+   * Results are scored by summing term frequencies across the matched terms,
+   * then sorted descending.
+   *
+   * @param query_tokens Tokens to search for, e.g. via Tokenize().
+   * @param top_k Maximum number of results to return.
+   * @return Up to @p top_k (path, score) pairs, highest score first.
+   *         Empty if @p query_tokens is empty or any term has no match.
+   */
+  std::vector<std::pair<std::string, double>> Search(
+      const std::vector<std::string>& query_tokens, size_t top_k = 20) const;
 
-    size_t DocumentCount() const { return doc_paths_.size(); }
-    size_t TermCount() const { return index_.size(); }
+  /**
+   * @brief Serializes the index to a binary file.
+   *
+   * @param out_path Destination file path. Overwritten if it exists.
+   * @throws std::runtime_error If the file can't be opened for writing.
+   */
+  void Save(const std::string& out_path) const;
 
-private:
-    std::vector<std::string> doc_paths_;
-    std::unordered_map<std::string, std::vector<Posting>> index_;
+  /**
+   * @brief Loads an index previously written by Save(), replacing any
+   * in-memory state.
+   *
+   * @param in_path Path to a file previously written by Save().
+   * @throws std::runtime_error If the file can't be opened for reading.
+   */
+  void Load(const std::string& in_path);
+
+  /**
+   * @brief Total document slots ever assigned, including removed docs.
+   */
+  size_t DocumentCount() const { return doc_paths_.size(); }
+
+  /**
+   * @brief Number of docs currently live in the index (excluding removed
+   * docs).
+   */
+  size_t ValidDocumentCount() const;
+
+  /**
+   * @brief Number of unique terms currently in the index.
+   */
+  size_t TermCount() const { return index_.size(); }
+
+ private:
+  std::vector<std::string> doc_paths_;  // doc_id -> path
+  std::vector<bool> doc_valid_;         // doc_id still indexed?
+  std::unordered_map<std::string, uint32_t> path_to_doc_id_;  // path -> doc_id
+  std::unordered_map<uint32_t, std::vector<std::string>>
+      forward_index_;  // doc_id -> unique terms
+  std::unordered_map<std::string, std::vector<Posting>>
+      index_;  // term -> postings
 };
 
-#endif // INVERTED_INDEX_HPP_
+#endif  // INVERTED_INDEX_HPP_

@@ -4,8 +4,14 @@
 #include <string>
 #include <vector>
 
-// Splits text into lowercase alphanumeric tokens.
-// Drops tokens shorter than 2 chars (cuts noise from punctuation/single letters).
+/**
+ * @brief Splits text into lowercase alphanumeric tokens, ignoring punctuation,
+ * whitespace, and symbols.
+ *
+ * @param text The raw text to tokenize.
+ * @return std::vector<std::string> A vector of lowercase tokens, in the order
+ * they appear.
+ */
 std::vector<std::string> Tokenize(const std::string& text);
 
-#endif // TOKENIZER_HPP_
+#endif  // TOKENIZER_HPP_
