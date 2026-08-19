@@ -4,3 +4,4 @@ fsearch
 compile_commands.json
 .DS_Store
 .cache/
+.vscode/
