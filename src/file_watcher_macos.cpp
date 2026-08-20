@@ -61,15 +61,21 @@ public:
 
     while (!stop_.load()) {
       int n = kevent(kq_, nullptr, 0, &event, 1, &timeout);
-      if (n <= 0)
-        continue;
 
-      int fd = static_cast<int>(event.ident);
-      auto it = fd_to_path_.find(fd);
-      if (it == fd_to_path_.end())
-        continue;
-
-      DiffAndEmit(it->second, callback);
+      if (n > 0) {
+        // Immediate event on a watched directory descriptor
+        int fd = static_cast<int>(event.ident);
+        auto it = fd_to_path_.find(fd);
+        if (it != fd_to_path_.end()) {
+          DiffAndEmit(it->second, callback);
+        }
+      } else {
+        // Periodic 500ms timeout wakeup: poll all watched directory snapshots
+        // to catch in-place edits to existing files (e.g. src/main.cpp)
+        for (const auto &[fd, path] : fd_to_path_) {
+          DiffAndEmit(path, callback);
+        }
+      }
     }
   }
 
@@ -103,6 +109,7 @@ private:
         callback(FileEvent{full_path, FileEventType::Modified});
       }
     }
+
     for (const auto &[name, mtime] : old) {
       (void)mtime;
       if (fresh.find(name) == fresh.end()) {
