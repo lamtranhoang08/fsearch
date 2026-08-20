@@ -7,7 +7,7 @@
 
 struct CrawlResult {
   std::string path;
-  std::string content;  // filename + file contents, ready for tokenizing
+  std::string content; // filename + file contents, ready for tokenizing
 };
 
 /**
@@ -23,8 +23,17 @@ struct CrawlResult {
  * @return std::vector<CrawlResult> Array of crawl results containing paths and
  * contents.
  */
-std::vector<CrawlResult> Crawl(const std::string& root_dir,
-                               const std::vector<std::string>& extensions,
+std::vector<CrawlResult> Crawl(const std::string &root_dir,
+                               const std::vector<std::string> &extensions,
                                size_t max_file_bytes = 1024 * 1024);
 
-#endif  // CRAWLER_HPP_
+/**
+ * @brief Lists a dictionary and every subdirectory beneath it, recursively.
+ *
+ * Used by watch mode to know which directories to register with the file watcher.
+ * @param root_dir Directory to enumerate, recursively.
+ * @return std::vector<std::string> Array of directory paths, including root_dir itself.
+ */
+std::vector<std::string> ListDictionaries(const std::string &root_dir);
+
+#endif // CRAWLER_HPP_
